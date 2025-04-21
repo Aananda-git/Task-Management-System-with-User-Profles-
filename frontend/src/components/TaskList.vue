@@ -1,84 +1,107 @@
 <template>
-  <div>
-    <h3>Tasks</h3>
+  <div class="container mt-4">
+    <h4>Task List</h4>
 
-    <div class="mb-2 d-flex gap-2 align-items-center">
-      <select class="form-select w-auto" v-model="filter" @change="loadTasks">
-        <option value="">All</option>
-        <option value="PENDING">Pending</option>
-        <option value="IN_PROGRESS">In Progress</option>
-        <option value="COMPLETED">Completed</option>
-      </select>
-      <button class="btn btn-sm btn-secondary" @click="prevPage" :disabled="page <= 1">Previous</button>
-      <button class="btn btn-sm btn-secondary" @click="nextPage" :disabled="!hasMore">Next</button>
+    <div v-if="tasks.length" class="table-responsive">
+      <table class="table table-bordered mt-3">
+        <thead class="table-light">
+          <tr>
+            <th>Title</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Due Date</th>
+            <th>Assigned To</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="task in tasks" :key="task.id">
+            <td>{{ task.title }}</td>
+            <td>{{ task.description }}</td>
+            <td>
+              <select v-model="task.status" @change="updateStatus(task)" class="form-select form-select-sm">
+                <option value="PENDING">Pending</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="COMPLETED">Completed</option>
+              </select>
+            </td>
+            <td>{{ task.due_date }}</td>
+            <td>{{ getAssignedUserName(task.assigned_to) }}</td>
+            <td>
+              <button class="btn btn-danger btn-sm" @click="task.id !== undefined && deleteTask(task.id)">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Pagination -->
+      <div class="d-flex justify-content-between align-items-center mt-2">
+        <button class="btn btn-outline-secondary" :disabled="page === 1" @click="page--">Previous</button>
+        <span>Page {{ page }}</span>
+        <button class="btn btn-outline-secondary" @click="page++">Next</button>
+      </div>
     </div>
 
-    <ul class="list-group">
-      <li v-for="task in tasks" :key="task.id" class="list-group-item d-flex justify-content-between align-items-center">
-        <div>
-          <strong>{{ task.title }}</strong>
-          <br />
-          <span>{{ task.description }}</span>
-          <br />
-          <small>Due: {{ task.due_date }}</small>
-        </div>
-
-        <div class="d-flex align-items-center gap-2">
-          <select v-model="task.status" @change="updateStatus(task)" class="form-select form-select-sm">
-            <option value="PENDING">Pending</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="COMPLETED">Completed</option>
-          </select>
-          <button class="btn btn-sm btn-danger" @click="deleteTask(task.id)">Delete</button>
-        </div>
-      </li>
-    </ul>
+    <div v-else class="mt-3">No tasks available.</div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import api from '../services/api';
-import { ref, onMounted } from 'vue';
-import type { Task } from '../types';
+import { ref, watchEffect } from 'vue'
+import api from '../services/api'
+import type { Task, Profile } from '../types'
 
-const tasks = ref<Task[]>([]);
-const filter = ref('');
-const page = ref(1);
-const hasMore = ref(false);
+const tasks = ref<Task[]>([])
+const profiles = ref<Profile[]>([])
+const page = ref(1)
 
-const loadTasks = async () => {
-  const res = await api.get('/tasks/', {
-    params: {
-      search: filter.value,
-      page: page.value,
-    },
-  });
-  tasks.value = res.data.results;
-  hasMore.value = !!res.data.next;
-};
+const fetchTasks = async () => {
+  try {
+    const res = await api.get(`/tasks/?page=${page.value}`)
+    tasks.value = res.data.results || res.data
+  } catch (err) {
+    console.error('Failed to fetch tasks:', err)
+  }
+}
+
+const fetchProfiles = async () => {
+  try {
+    const res = await api.get('/profiles/')
+    profiles.value = res.data.results || res.data
+  } catch (err) {
+    console.error('Failed to fetch profiles:', err)
+  }
+}
+
+const getAssignedUserName = (username: string) => {
+  const user = profiles.value.find(profile => profile.username === username)
+  return user ? user.username : username 
+}
 
 const updateStatus = async (task: Task) => {
-  await api.put(`/tasks/${task.id}/`, task);
-};
+  try {
+    await api.put(`/tasks/${task.id}/`, task)
+    alert('Status updated!')
+  } catch (err) {
+    alert('Failed to update status.')
+    console.error(err)
+  }
+}
 
 const deleteTask = async (id: number) => {
-  if (confirm('Are you sure you want to delete this task?')) {
-    await api.delete(`/tasks/${id}/`);
-    loadTasks();
+  if (!confirm('Are you sure you want to delete this task?')) return
+  try {
+    await api.delete(`/tasks/${id}/`)
+    alert('Task deleted.')
+    fetchTasks()
+  } catch (err) {
+    alert('Failed to delete task.')
+    console.error(err)
   }
-};
+}
 
-const nextPage = () => {
-  page.value += 1;
-  loadTasks();
-};
-
-const prevPage = () => {
-  if (page.value > 1) {
-    page.value -= 1;
-    loadTasks();
-  }
-};
-
-onMounted(loadTasks);
+watchEffect(() => {
+  fetchTasks()
+  fetchProfiles()
+})
 </script>
