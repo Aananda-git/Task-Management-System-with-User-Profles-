@@ -14,10 +14,15 @@ export interface UserProfile {
 export type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
 
 export interface Task {
-  id: number;
-  title: string;
-  description: string;
-  status: TaskStatus;
-  due_date: string;
-  assigned_to: number;
+  id?: number
+  title: string
+  description: string
+  status: string
+  due_date: string
+  assigned_to: string
+}
+
+export interface Profile {
+  id: number
+  username: string
 }
