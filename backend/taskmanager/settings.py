@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'core',
     'corsheaders',
+    'taskmanager',
 ]
 
 REST_FRAMEWORK = {
