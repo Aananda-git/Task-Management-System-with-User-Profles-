@@ -1,48 +1,83 @@
 <template>
-  <div class="mt-4">
-    <h4>Create Task</h4>
-    <form @submit.prevent="submit">
-      <input v-model="form.title" class="form-control mb-2" placeholder="Title" />
-      <textarea v-model="form.description" class="form-control mb-2" placeholder="Description" />
-      <input type="date" v-model="form.due_date" class="form-control mb-2" />
-      <select v-model="form.status" class="form-select mb-2">
-        <option value="PENDING">Pending</option>
-        <option value="IN_PROGRESS">In Progress</option>
-        <option value="COMPLETED">Completed</option>
-      </select>
-      <select v-model="form.assigned_to" class="form-select mb-3">
-        <option v-for="p in profiles" :key="p.id" :value="p.id">{{ p.user.username }}</option>
-      </select>
-      <button class="btn btn-success">Submit</button>
+  <div class="container mt-4">
+    <h4>Create or Update Task</h4>
+    <form @submit.prevent="submitTask">
+      <div class="form-group">
+        <label for="title">Title</label>
+        <input v-model="task.title" id="title" class="form-control" required />
+      </div>
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea v-model="task.description" id="description" class="form-control" required></textarea>
+      </div>
+      <div class="form-group">
+        <label for="status">Status</label>
+        <select v-model="task.status" id="status" class="form-control">
+          <option value="PENDING">Pending</option>
+          <option value="IN_PROGRESS">In Progress</option>
+          <option value="COMPLETED">Completed</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="due_date">Due Date</label>
+        <input v-model="task.due_date" id="due_date" type="date" class="form-control" required />
+      </div>
+      <div class="form-group">
+        <label for="assigned_to">Assigned To</label>
+        <select v-model="task.assigned_to" id="assigned_to" class="form-control" required>
+          <option v-for="profile in profiles" :key="profile.id" :value="profile.username">
+            {{ profile.username }}
+          </option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary mt-3">Save Task</button>
     </form>
   </div>
 </template>
 
 <script lang="ts" setup>
-import api from '../services/api';
-import { ref, onMounted } from 'vue';
-import type { Task, UserProfile } from '../types';
+import { ref } from 'vue'
+import api from '../services/api'
+import type { Task, Profile } from '../types'
+import router from '../router'
 
-const form = ref<Partial<Task>>({
+
+
+const task = ref<Task>({
   title: '',
   description: '',
-  due_date: '',
   status: 'PENDING',
-  assigned_to: undefined,
-});
+  due_date: '',
+  assigned_to: '', 
+})
 
-const profiles = ref<UserProfile[]>([]);
+const profiles = ref<Profile[]>([])
 
-const loadProfiles = async () => {
-  const res = await api.get('/profiles/');
-  profiles.value = res.data;
-};
+const fetchProfiles = async () => {
+  try {
+    const res = await api.get('/profiles/')
+    profiles.value = res.data.results || res.data
+  } catch (err) {
+    console.error('Failed to fetch profiles:', err)
+  }
+}
 
-const submit = async () => {
-  await api.post('/tasks/', form.value);
-  alert('Task created!');
-  form.value = { title: '', description: '', due_date: '', status: 'PENDING' };
-};
+const submitTask = async () => {
+  try {
+    // If task.id exists, we are updating the task
+    if (task.value.id) {
+      await api.put(`/tasks/${task.value.id}/`, task.value)
+    } else {
+      // Otherwise, create a new task
+      await api.post('/tasks/', task.value)
+    }
+    alert('Task saved successfully!')
+    router.push('/tasks')
+  } catch (err) {
+    alert('Failed to save task.')
+    console.error(err)
+  }
+}
 
-onMounted(loadProfiles);
+fetchProfiles()
 </script>
