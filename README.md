@@ -1,4 +1,4 @@
-# Task-Management-System-with-User-Profles
+# Task-Management-System-with-User-Profiles
 
 A full-stack Task Management System built with **Django REST Framework** for the backend and **Vue 3 with TypeScript** for the frontend. The system allows users to manage user profiles and tasks with authentication and real-time interaction.
 
