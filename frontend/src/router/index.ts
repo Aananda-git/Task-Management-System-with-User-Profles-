@@ -10,9 +10,11 @@ const routes = [
   { path: '/', component: Login },
   { path: '/dashboard', component: Dashboard, meta: { requiresAuth: true } },
   { path: '/profiles', component: ProfileList, meta: { requiresAuth: true } },
-  { path: '/create-profile', component: ProfileForm, meta: { requiresAuth: true } },
+  { path: '/create-profile', component: ProfileForm, meta: { requiresAuth: true }, name: 'CreateProfile' },
+  { path: '/profiles/edit/:id', component: ProfileForm, meta: { requiresAuth: true }, name: 'EditProfile' },  // Edited this line to add name
   { path: '/tasks', component: TaskList, meta: { requiresAuth: true } },
   { path: '/create-task', component: TaskForm, meta: { requiresAuth: true } },
+  { path: '/tasks/edit/:id', component: TaskForm, meta: { requiresAuth: true }, name: 'EditTask' }
 ]
 
 const router = createRouter({
